@@ -1,0 +1,73 @@
+;aplicaci¨®n que usa el USART en modo loopback
+		;memoria de programa de 1k
+		;
+		;Puertos del serial
+		CONSTANT PuertoLeeListoTX,    11
+		CONSTANT PuertoEscribeDatoTX, 12
+		CONSTANT PuertoLeeDatoRX,     13
+		CONSTANT PuertoDatoListoRX,   14
+		CONSTANT PuertoDatoRXLeido,   15	
+	      ;
+		NAMEREG s5, DatoSerial
+		NAMEREG s6, EstadoTX
+		NAMEREG s7, EstadoRX
+		NAMEREG s8, LeidoRX
+
+
+		;puertos del spi
+		CONSTANT PuertoLeeXLSB, 41
+		CONSTANT PuertoLeeXMSB, 42
+		;
+		;puerto de los leds
+		CONSTANT PuertoSalida,  02
+		;
+		NAMEREG s0, DatoAccel
+		NAMEREG s2, DatoPrueba
+            NAMEREG s9, Salida
+		;
+		;inicio de programa
+
+		;
+loop:
+		;lee cada uno de los componentes del acelerometro
+		CALL 		delay_1s
+		INPUT		DatoAccel, PuertoLeeXMSB
+		COMPARE     	DatoAccel, 11111111'b
+		JUMP Z,     	salida0
+
+		INPUT		DatoAccel, PuertoLeeXMSB
+		COMPARE     	DatoAccel, 00000000'b
+		JUMP Z,     	salida1
+		;
+		;rutina de transmision del uart
+tx_uart:
+		INPUT		EstadoTX, PuertoLeeListoTX
+		COMPARE		EstadoTX, 01
+		JUMP		Z, tx_uart
+		OUTPUT		DatoSerial, PuertoEscribeDatoTX
+		RETURN
+		
+
+delay_1s: 
+		LOAD sa, BE
+		LOAD sb, BC
+		LOAD sc, 20
+delay_loop: 
+		SUB 		sD, 1'd
+		SUBCY 		s1, 0'd
+		SUBCY 		sE, 0'd
+		JUMP 		NZ, delay_loop
+		RETURN
+		;
+
+salida0: ;x positivo
+	LOAD	DatoSerial, "R"
+	CALL		tx_uart
+	JUMP loop
+
+
+salida1: ;x negativo
+	LOAD	DatoSerial, "L"
+	CALL		tx_uart
+	JUMP loop
+
